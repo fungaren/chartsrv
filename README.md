@@ -17,7 +17,8 @@ $ ./chartsrv https://prometheus.example.org
 Listening on :8142
 ```
 
-Forward `/chart.svg` to this address with your favorite reverse proxy.
+Forward `/chart.svg` to this address with your favorite reverse proxy. If you
+want to listen to some other port, pass a second argument like `:1337`.
 
 ## Usage
 
