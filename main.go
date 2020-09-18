@@ -190,6 +190,10 @@ func main() {
 			m, _ := strconv.ParseFloat(ms[0], 64)
 			p.Y.Max = m
 		}
+		if ms, ok := args["min"]; ok {
+			m, _ := strconv.ParseFloat(ms[0], 64)
+			p.Y.Min = m
+		}
 		p.Legend.Top = true
 
 		sums := make([]float64, len(data[0].Values))

@@ -32,9 +32,8 @@ set the query parameters as appropriate:
 - **stacked**: set to create an area chart instead of a line chart
 - **since**: [time.ParseDuration][1] to set distance in the past to start
   charting from
-- **width**: chart width in inches
-- **height**: chart height in inches
+- **width**, **height**: adjust chart dimensions in inches
 - **step**: number of seconds between data points
-- **max**: maximum Y value
+- **min**, **max**: Y axis limits
 
 [1]: https://golang.org/pkg/time/#ParseDuration
