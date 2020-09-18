@@ -1,7 +1,9 @@
 # chartsrv
 
 chartsrv is a dead-simple web application which runs [Prometheus][0] queries and
-charts the result as an SVG.
+charts the result as an SVG. You make a dashboard by putting a lot of these
+images into a web page. You make it refresh by adding
+`<meta id="refresh" http-equiv="refresh" content="5">` to the header. Ta-da!
 
 [0]: https://prometheus.io/
 
