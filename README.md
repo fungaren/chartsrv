@@ -5,6 +5,10 @@ charts the result as an SVG.
 
 [0]: https://prometheus.io/
 
+![Live graph from metrics.sr.ht](https://metrics.sr.ht/chart.svg?title=Build%20worker%20load%20average&query=avg_over_time%28node_load15%7Binstance%3D~%22cirno%5B0-9%5D%2B.sr.ht%3A80%22%7D%5B1h%5D%29&max=64&since=336h&stacked&step=10000&height=3&width=10)
+
+This is a live graph from [metrics.sr.ht](https://metrics.sr.ht)
+
 ## Running the daemon
 
 ```
