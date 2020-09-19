@@ -185,7 +185,7 @@ func main() {
 			p.Title.Text = t[0]
 		}
 		p.X.Label.Text = "Time"
-		p.X.Tick.Marker = dateTicks{}
+		p.X.Tick.Marker = dateTicks{start, end}
 		if ms, ok := args["max"]; ok {
 			m, _ := strconv.ParseFloat(ms[0], 64)
 			p.Y.Max = m
@@ -259,10 +259,19 @@ func main() {
 	http.ListenAndServe(addr, router)
 }
 
-type dateTicks struct{}
+type dateTicks struct {
+	Start time.Time
+	End   time.Time
+}
+
 // Ticks computes the default tick marks, but inserts commas
 // into the labels for the major tick marks.
-func (dateTicks) Ticks(min, max float64) []plot.Tick {
+func (dt dateTicks) Ticks(min, max float64) []plot.Tick {
+	fmt := "15:04:05"
+	if dt.End.Sub(dt.Start).Hours() >= 24 {
+		fmt = "Jan 2 15:04:05"
+	}
+
 	tks := plot.DefaultTicks{}.Ticks(min, max)
 	for i, t := range tks {
 		if t.Label == "" { // Skip minor ticks, they are fine.
@@ -270,7 +279,7 @@ func (dateTicks) Ticks(min, max float64) []plot.Tick {
 		}
 		d, _ := strconv.ParseFloat(t.Label, 64)
 		tm := time.Unix(int64(d), 0)
-		tks[i].Label = tm.Format("15:04:05")
+		tks[i].Label = tm.Format(fmt)
 	}
 	return tks
 }
