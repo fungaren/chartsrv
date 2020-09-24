@@ -128,6 +128,10 @@ func metricName(metric map[string]string) string {
 func main() {
 	plotutil.DefaultDashes = [][]vg.Length{{}}
 
+	if len(os.Args) < 2 {
+		fmt.Printf("Usage: %s server\n", os.Args[0])
+		os.Exit(1)
+	}
 	upstream = os.Args[1]
 	router := chi.NewRouter()
 	router.Use(middleware.RealIP)
