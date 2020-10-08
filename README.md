@@ -30,8 +30,8 @@ set the query parameters as appropriate:
 - **query**: required. Prometheus query to execute.
 - **title**: chart title
 - **stacked**: set to create an area chart instead of a line chart
-- **since**: [time.ParseDuration][1] to set distance in the past to start
-  charting from
+- **since**, **until**: [time.ParseDuration][1] to set distance in the past to
+  start charting from or until
 - **width**, **height**: adjust chart dimensions in inches
 - **step**: number of seconds between data points
 - **min**, **max**: Y axis limits

@@ -13,6 +13,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/dustin/go-humanize"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
 	"gonum.org/v1/plot"
@@ -154,6 +155,10 @@ func main() {
 			d, _ := time.ParseDuration(s[0])
 			start = time.Now().Add(-d)
 		}
+		if u, ok := args["until"]; ok {
+			d, _ := time.ParseDuration(u[0])
+			end = time.Now().Add(-d)
+		}
 
 		width := 12*vg.Inch
 		height := 6*vg.Inch
@@ -164,6 +169,12 @@ func main() {
 		if hs, ok := args["height"]; ok {
 			h, _ := strconv.ParseFloat(hs[0], 32)
 			height = vg.Length(h)*vg.Inch
+		}
+
+		// Undocumented option
+		var legend string
+		if l, ok := args["legend"]; ok {
+			legend = l[0]
 		}
 
 		// Set step so that there's approximately 25 data points per inch
@@ -194,6 +205,8 @@ func main() {
 			m, _ := strconv.ParseFloat(ms[0], 64)
 			p.Y.Max = m
 		}
+
+		p.Y.Tick.Marker = humanTicks{}
 		if ms, ok := args["min"]; ok {
 			m, _ := strconv.ParseFloat(ms[0], 64)
 			p.Y.Min = m
@@ -238,7 +251,11 @@ func main() {
 				nextColor = 0
 			}
 			plotters[i] = l
-			p.Legend.Add(res.Metric, l)
+			if legend != "" {
+				p.Legend.Add(legend, l)
+			} else {
+				p.Legend.Add(res.Metric, l)
+			}
 		}
 		for i := len(plotters) - 1; i >= 0; i-- {
 			p.Add(plotters[i])
@@ -284,6 +301,20 @@ func (dt dateTicks) Ticks(min, max float64) []plot.Tick {
 		d, _ := strconv.ParseFloat(t.Label, 64)
 		tm := time.Unix(int64(d), 0)
 		tks[i].Label = tm.Format(fmt)
+	}
+	return tks
+}
+
+type humanTicks struct{}
+
+func (ht humanTicks) Ticks(min, max float64) []plot.Tick {
+	tks := plot.DefaultTicks{}.Ticks(min, max)
+	for i, t := range tks {
+		if t.Label == "" { // Skip minor ticks, they are fine.
+			continue
+		}
+		d, _ := strconv.ParseFloat(t.Label, 64)
+		tks[i].Label = humanize.SI(d, "")
 	}
 	return tks
 }
