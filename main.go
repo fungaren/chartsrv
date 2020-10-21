@@ -149,15 +149,15 @@ func registerExtension(router chi.Router, extension string, mime string) {
 			end = time.Now().Add(-d)
 		}
 
-		width := 12*vg.Inch
-		height := 6*vg.Inch
+		width := 12 * vg.Inch
+		height := 6 * vg.Inch
 		if ws, ok := args["width"]; ok {
 			w, _ := strconv.ParseFloat(ws[0], 32)
-			width = vg.Length(w)*vg.Inch
+			width = vg.Length(w) * vg.Inch
 		}
 		if hs, ok := args["height"]; ok {
 			h, _ := strconv.ParseFloat(hs[0], 32)
-			height = vg.Length(h)*vg.Inch
+			height = vg.Length(h) * vg.Inch
 		}
 
 		// Undocumented option
