@@ -126,19 +126,8 @@ func metricName(metric map[string]string) string {
 	return out + "{" + strings.Join(inner, ",") + "}"
 }
 
-func main() {
-	plotutil.DefaultDashes = [][]vg.Length{{}}
-
-	if len(os.Args) < 2 {
-		fmt.Printf("Usage: %s server\n", os.Args[0])
-		os.Exit(1)
-	}
-	upstream = os.Args[1]
-	router := chi.NewRouter()
-	router.Use(middleware.RealIP)
-	router.Use(middleware.Logger)
-
-	router.Get("/chart.svg", func(w http.ResponseWriter, r *http.Request) {
+func registerExtension(router chi.Router, extension string, mime string) {
+	router.Get("/chart."+extension, func(w http.ResponseWriter, r *http.Request) {
 		args := r.URL.Query()
 		var query string
 		if q, ok := args["query"]; !ok {
@@ -261,16 +250,34 @@ func main() {
 			p.Add(plotters[i])
 		}
 
-		writer, err := p.WriterTo(width, height, "svg")
+		writer, err := p.WriterTo(width, height, extension)
 		if err != nil {
 			w.WriteHeader(400)
 			w.Write([]byte(fmt.Sprintf("%v", err)))
 			return
 		}
 
-		w.Header().Add("Content-Type", "image/svg+xml")
+		w.Header().Add("Content-Type", mime)
 		writer.WriteTo(w)
 	})
+
+}
+
+func main() {
+	plotutil.DefaultDashes = [][]vg.Length{{}}
+
+	if len(os.Args) < 2 {
+		fmt.Printf("Usage: %s server\n", os.Args[0])
+		os.Exit(1)
+	}
+	upstream = os.Args[1]
+	router := chi.NewRouter()
+
+	router.Use(middleware.RealIP)
+	router.Use(middleware.Logger)
+
+	registerExtension(router, "svg", "image/svg+xml")
+	registerExtension(router, "png", "image/png")
 
 	addr := ":8142"
 	if len(os.Args) > 2 {
