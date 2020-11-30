@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"image/color"
@@ -11,6 +12,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"text/template"
 	"time"
 
 	"github.com/dustin/go-humanize"
@@ -126,6 +128,30 @@ func metricName(metric map[string]string) string {
 	return out + "{" + strings.Join(inner, ",") + "}"
 }
 
+func handleLabel(p *plot.Plot, l *plotter.Line, label string, metric string) {
+	raw := metric[1 : len(metric)-1]
+	raw_tags := strings.Split(raw, ",")
+	tags := make(map[string]string)
+	for _, v := range raw_tags {
+		tag := strings.Split(v, "=")
+		if len(tag) != 2 {
+			log.Printf("Expected tag format: 'name=value'!")
+			continue
+		}
+		if len(tag[1]) > 2 && tag[1][0] == '"' && tag[1][len(tag[1])-1] == '"' {
+			tags[tag[0]] = tag[1][1 : len(tag[1])-1]
+		}
+	}
+	tmpl, err := template.New("label").Parse(label)
+	if err != nil {
+		log.Printf("Failed to parse label template: ", err)
+	} else {
+		var label_out bytes.Buffer
+		tmpl.Execute(&label_out, tags)
+		p.Legend.Add(label_out.String(), l)
+	}
+}
+
 func registerExtension(router chi.Router, extension string, mime string) {
 	router.Get("/chart."+extension, func(w http.ResponseWriter, r *http.Request) {
 		args := r.URL.Query()
@@ -166,8 +192,14 @@ func registerExtension(router chi.Router, extension string, mime string) {
 			legend = l[0]
 		}
 
+		// Label template
+		var label string
+		if l, ok := args["label"]; ok {
+			label = l[0]
+		}
+
 		// Set step so that there's approximately 25 data points per inch
-		step := int(end.Sub(start).Seconds() / (25 * float64(width / vg.Inch)))
+		step := int(end.Sub(start).Seconds() / (25 * float64(width/vg.Inch)))
 		if s, ok := args["step"]; ok {
 			d, _ := strconv.ParseInt(s[0], 10, 32)
 			step = int(d)
@@ -229,7 +261,7 @@ func registerExtension(router chi.Router, extension string, mime string) {
 			}
 			if stacked {
 				l.FillColor = colors[nextColor]
-				if i != len(data) - 1 {
+				if i != len(data)-1 {
 					l.Color = color.RGBA{0, 0, 0, 0}
 				}
 			} else {
@@ -240,7 +272,9 @@ func registerExtension(router chi.Router, extension string, mime string) {
 				nextColor = 0
 			}
 			plotters[i] = l
-			if legend != "" {
+			if label != "" && len(res.Metric) > 2 && res.Metric[0] == '{' && res.Metric[len(res.Metric)-1] == '}' {
+				handleLabel(p, l, label, res.Metric)
+			} else if legend != "" {
 				p.Legend.Add(legend, l)
 			} else {
 				p.Legend.Add(res.Metric, l)
