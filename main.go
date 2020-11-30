@@ -186,12 +186,6 @@ func registerExtension(router chi.Router, extension string, mime string) {
 			height = vg.Length(h) * vg.Inch
 		}
 
-		// Undocumented option
-		var legend string
-		if l, ok := args["legend"]; ok {
-			legend = l[0]
-		}
-
 		// Label template
 		var label string
 		if l, ok := args["label"]; ok {
@@ -274,8 +268,6 @@ func registerExtension(router chi.Router, extension string, mime string) {
 			plotters[i] = l
 			if label != "" && len(res.Metric) > 2 && res.Metric[0] == '{' && res.Metric[len(res.Metric)-1] == '}' {
 				handleLabel(p, l, label, res.Metric)
-			} else if legend != "" {
-				p.Legend.Add(legend, l)
 			} else {
 				p.Legend.Add(res.Metric, l)
 			}
