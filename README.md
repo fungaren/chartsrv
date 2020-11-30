@@ -35,5 +35,8 @@ set the query parameters as appropriate:
 - **width**, **height**: adjust chart dimensions in inches
 - **step**: number of seconds between data points
 - **min**, **max**: Y axis limits
+- **label**: template for the chart legend in Go's text/template format. All
+values provided by prometheus as tags are available - to label each matching
+result by the instance, for instance, use `{{.instance}}`
 
 [1]: https://golang.org/pkg/time/#ParseDuration
