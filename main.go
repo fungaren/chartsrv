@@ -144,7 +144,7 @@ func handleLabel(p *plot.Plot, l *plotter.Line, label string, metric string) {
 	}
 	tmpl, err := template.New("label").Parse(label)
 	if err != nil {
-		log.Printf("Failed to parse label template: ", err)
+		log.Printf("Failed to parse label template: %v", err)
 	} else {
 		var label_out bytes.Buffer
 		tmpl.Execute(&label_out, tags)
