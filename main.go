@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"image/color"
 	"log"
+	"math"
 	"net/http"
 	"net/url"
 	"os"
@@ -86,10 +87,15 @@ func Query(q string, start time.Time, end time.Time, step int) ([]PromResult, er
 		r.Metric = metricName(res.Metric)
 
 		var values []Datapoint
+		isValid := true
 		for _, vals := range res.Values {
 			timestamp := vals[0].(float64)
 			value := vals[1].(string)
 			fv, _ := strconv.ParseFloat(value, 64)
+			if math.IsNaN(fv) || math.IsInf(fv, 0) {
+				isValid = false
+				break
+			}
 			values = append(values, Datapoint{
 				time.Unix(int64(timestamp), 0),
 				fv,
@@ -97,7 +103,9 @@ func Query(q string, start time.Time, end time.Time, step int) ([]PromResult, er
 		}
 		r.Values = values
 
-		results = append(results, r)
+		if isValid {
+			results = append(results, r)
+		}
 	}
 	return results, nil
 }
