@@ -46,7 +46,7 @@ type Datapoint struct {
 }
 
 type PromResult struct {
-	Metric string
+	Metric map[string]string
 	Values []Datapoint
 }
 
@@ -84,7 +84,7 @@ func Query(q string, start time.Time, end time.Time, step int) ([]PromResult, er
 	var results []PromResult
 	for _, res := range data.Data.Result {
 		r := PromResult{}
-		r.Metric = metricName(res.Metric)
+		r.Metric = res.Metric
 
 		var values []Datapoint
 		isValid := true
@@ -136,26 +136,13 @@ func metricName(metric map[string]string) string {
 	return out + "{" + strings.Join(inner, ",") + "}"
 }
 
-func handleLabel(p *plot.Plot, l *plotter.Line, label string, metric string) {
-	raw := metric[1 : len(metric)-1]
-	raw_tags := strings.Split(raw, ",")
-	tags := make(map[string]string)
-	for _, v := range raw_tags {
-		tag := strings.Split(v, "=")
-		if len(tag) != 2 {
-			log.Printf("Expected tag format: 'name=value'!")
-			continue
-		}
-		if len(tag[1]) > 2 && tag[1][0] == '"' && tag[1][len(tag[1])-1] == '"' {
-			tags[tag[0]] = tag[1][1 : len(tag[1])-1]
-		}
-	}
+func handleLabel(p *plot.Plot, l *plotter.Line, label string, metric map[string]string) {
 	tmpl, err := template.New("label").Parse(label)
 	if err != nil {
 		log.Printf("Failed to parse label template: %v", err)
 	} else {
 		var label_out bytes.Buffer
-		tmpl.Execute(&label_out, tags)
+		tmpl.Execute(&label_out, metric)
 		p.Legend.Add(label_out.String(), l)
 	}
 }
@@ -274,10 +261,10 @@ func registerExtension(router chi.Router, extension string, mime string) {
 				nextColor = 0
 			}
 			plotters[i] = l
-			if label != "" && len(res.Metric) > 2 && res.Metric[0] == '{' && res.Metric[len(res.Metric)-1] == '}' {
+			if label != "" {
 				handleLabel(p, l, label, res.Metric)
 			} else {
-				p.Legend.Add(res.Metric, l)
+				p.Legend.Add(metricName(res.Metric), l)
 			}
 		}
 		for i := len(plotters) - 1; i >= 0; i-- {
