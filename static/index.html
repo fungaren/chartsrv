@@ -1,0 +1,252 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8" />
+<title>Chartsrv</title>
+<link rel="stylesheet" href="base.css" />
+<style>
+  #preview, #alert { max-width: 100%; margin-top: 0.25em; }
+</style>
+<main>
+  <form>
+    <table class="grid">
+      <tr>
+        <td colspan="2"></td>
+        <td colspan="10">
+          <h1>Chartsrv</h1>
+          <p>
+            Web service which renders SVG plots from Prometheus data.
+            <a href="https://sr.ht/~sircmpwn/chartsrv/">See on SourceHut.</a>
+          </p>
+          <noscript>
+            <p class="text-danger">Please enable JavaScript to use this tool.</p>
+          </noscript>
+        </td>
+        <td colspan="2"></td>
+      </tr>
+      <tr>
+        <td colspan="3"></td>
+        <td colspan="4">
+          <div class="form-field">
+            <label for="instance">
+              Chartsrv instance <span class="text-danger">*</span>
+            </label>
+            <input type="text" id="instance" placeholder="metrics.sr.ht:8142" />
+          </div>
+        </td>
+        <td colspan="2">
+          <div class="form-field">
+            <label for="format">Format</label>
+            <select id="format">
+              <option>svg</option>
+              <option>png</option>
+            </select>
+          </div>
+        </td>
+        <td colspan="3"></td>
+      </tr>
+      <tr>
+        <td colspan="3"></td>
+        <td colspan="6">
+          <div class="form-field">
+            <label for="query">Query <span class="text-danger">*</span></label>
+            <input type="text" id="query"
+              value="avg_over_time(node_load15[1h])" />
+          </div>
+          <div class="form-checkbox">
+            <input type="checkbox" id="stacked" />
+            <label for="stacked" class="checkbox">Stacked</label>
+          </div>
+        </td>
+        <td colspan="3"></td>
+      </tr>
+      <tr>
+        <td colspan="3"></td>
+        <td colspan="2">
+          <div class="form-field">
+            <label for="since">Time from</label>
+            <input type="text" id="since" placeholder="24h" />
+          </div>
+        </td>
+        <td colspan="2">
+          <div class="form-field">
+            <label for="until">Time to</label>
+            <input type="text" id="until" />
+          </div>
+        </td>
+        <td colspan="2">
+          <div class="form-field">
+            <label for="step">Step</label>
+            <input type="number" id="step" />
+          </div>
+        </td>
+        <td colspan="3"></td>
+      </tr>
+      <tr>
+        <td colspan="3"></td>
+        <td colspan="6">
+          <span class="help">
+            Time fields are relative to present and use
+            <a href="https://godocs.io/time#ParseDuration">duration strings</a>.
+            <em>Step</em> is in seconds.
+          </span>
+        </td>
+        <td colspan="3"></td>
+      </tr>
+      <tr>
+        <td colspan="3"></td>
+        <td colspan="3">
+          <div class="form-field">
+            <label for="min">Y min</label>
+            <input type="number" id="min" />
+          </div>
+        </td>
+        <td colspan="3">
+          <div class="form-field">
+            <label for="max">Y max</label>
+            <input type="number" id="max" />
+          </div>
+        </td>
+        <td colspan="3"></td>
+      </tr>
+      <tr>
+        <td colspan="3"></td>
+        <td colspan="3">
+          <div class="form-field">
+            <label for="title">Title</label>
+            <input type="text" id="title" />
+          </div>
+        </td>
+        <td colspan="3">
+          <div class="form-field">
+            <label for="label">Label</label>
+            <input type="text" id="label" placeholder="{{.instance}}"
+              value="{{.instance}}" />
+          </div>
+        </td>
+        <td colspan="3"></td>
+      </tr>
+      <tr>
+        <td colspan="3"></td>
+        <td colspan="6">
+          <span class="help">
+            <em>Label</em> accepts a
+            <a href="https://godocs.io/text/template">template</a>.
+            All Prometheus labels are available.
+          </span>
+        </td>
+        <td colspan="3"></td>
+      </tr>
+      <tr>
+        <td colspan="3"></td>
+        <td colspan="3">
+          <div class="form-field">
+            <label for="width">Width</label>
+            <input type="number" id="width" min="0" placeholder="12" />
+          </div>
+        </td>
+        <td colspan="3">
+          <div class="form-field">
+            <label for="height">Height</label>
+            <input type="number" id="height" min="0" placeholder="6" />
+          </div>
+        </td>
+        <td colspan="3"></td>
+      </tr>
+      <tr>
+        <td colspan="3"></td>
+        <td colspan="6">
+          <span class="help">
+            Dimensions are in inches. DPI is fixed at 96.
+          </span>
+        </td>
+        <td colspan="3"></td>
+      </tr>
+      <tr>
+        <td colspan="3"></td>
+        <td colspan="6">
+          <div class="form-field">
+            <label for="url">Chart URL</label>
+            <input type="text" id="url" disabled />
+          </div>
+        </td>
+        <td colspan="3"></td>
+      </tr>
+      <tr>
+        <td colspan="3"></td>
+        <td colspan="6">
+          <div class="form-field">
+            <label for="preview">Chart preview</label>
+            <div id="alert" class="alert alert-danger" style="display: none">
+              Loading preview failed. Are the parameters correct?
+            </div>
+            <img id="preview" alt="" />
+          </div>
+        </td>
+        <td colspan="3"></td>
+      </tr>
+   </table>
+  </form>
+</main>
+
+<script>
+  function getValue(id) {
+    var el = document.getElementById(id);
+
+    if (el.type === "checkbox") {
+      return el.checked ? id : "";
+    }
+
+    return el.value;
+  }
+
+  function updateChart() {
+    var src = getValue("instance");
+
+    if (!/^[a-z]+\:\/{2}/.test(src)) {
+        src = "http://" + src;
+    }
+    if (src[src.length - 1] !== "/") { src += "/"; }
+
+    src += "chart." + getValue("format") + "?";
+
+    var params = ["query", "title", "stacked", "since", "until", "width",
+        "height", "step", "min", "max", "label"];
+    var first = true;
+    for (var i = 0; i < params.length; ++i) {
+      var value = getValue(params[i]);
+      if (value !== "") {
+        if (!first) { src += "&"; }
+        first = false;
+
+        src += params[i] + "=" + encodeURIComponent(getValue(params[i]));
+      }
+    }
+
+    document.getElementById("url").value = src;
+    document.getElementById("preview").src = src;
+  }
+
+  function showAlert() {
+    document.getElementById("alert").style.display = "";
+  }
+
+  function hideAlert() {
+    document.getElementById("alert").style.display = "none";
+  }
+
+  var instInp = document.getElementById("instance");
+    if (instInp.value === "") {
+      instInp.value = window.location.protocol + "//" + window.location.host;
+    }
+
+  var inputs = document.getElementsByTagName("input");
+  for (var i = 0; i < inputs.length; ++i) {
+    inputs[i].onchange = updateChart;
+  }
+  document.getElementById("format").onchange = updateChart;
+
+  document.getElementById("preview").onerror = showAlert;
+  document.getElementById("preview").onload = hideAlert;
+
+  updateChart();
+</script>

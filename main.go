@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"path/filepath"
 	"sort"
 	"strconv"
 	"strings"
@@ -299,6 +300,17 @@ func main() {
 
 	registerExtension(router, "svg", "image/svg+xml")
 	registerExtension(router, "png", "image/png")
+
+	staticDir := os.Getenv("CHARTSRV_STATICDIR")
+	if staticDir == "" {
+		staticDir = "static"
+	}
+
+	router.Get("/*", func(w http.ResponseWriter, r *http.Request) {
+		workDir, _ := os.Getwd()
+		fs := http.FileServer(http.Dir(filepath.Join(workDir, staticDir)))
+		fs.ServeHTTP(w, r)
+	})
 
 	addr := ":8142"
 	if len(os.Args) > 2 {
