@@ -10,7 +10,6 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-	"path/filepath"
 	"sort"
 	"strconv"
 	"strings"
@@ -307,8 +306,7 @@ func main() {
 	}
 
 	router.Get("/*", func(w http.ResponseWriter, r *http.Request) {
-		workDir, _ := os.Getwd()
-		fs := http.FileServer(http.Dir(filepath.Join(workDir, staticDir)))
+		fs := http.FileServer(http.Dir(staticDir))
 		fs.ServeHTTP(w, r)
 	})
 
