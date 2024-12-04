@@ -14,8 +14,7 @@ This is a live graph from [metrics.sr.ht](https://metrics.sr.ht)
 ## Running the daemon
 
 ```
-$ go build -o chartsrv main.go
-$ ./chartsrv https://prometheus.example.org
+$ go run main.go https://prometheus.example.org
 Listening on :8142
 ```
 

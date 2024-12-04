@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"image/color"
+	"io"
 	"log"
 	"math"
 	"net/http"
@@ -56,15 +57,24 @@ func Query(q string, start time.Time, end time.Time, step int) ([]PromResult, er
 	body.Set("start", fmt.Sprintf("%d", start.Unix()))
 	body.Set("end", fmt.Sprintf("%d", end.Unix()))
 	body.Set("step", fmt.Sprintf("%d", step))
-	resp, err := http.Post(fmt.Sprintf("%s/api/v1/query_range", upstream),
-		"application/x-www-form-urlencoded", strings.NewReader(body.Encode()))
+	req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("%s/api/v1/query_range", upstream), strings.NewReader(body.Encode()))
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	auth := os.Getenv("AUTH")
+	if auth != "" {
+		req.Header.Set("Authorization", auth)
+	}
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return nil, err
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != 200 {
-		return nil, fmt.Errorf("Received %d response from upstream", resp.StatusCode)
+		data, _ := io.ReadAll(resp.Body)
+		return nil, fmt.Errorf("received %d response from upstream: %s", resp.StatusCode, string(data))
 	}
 
 	var data PromResponse
@@ -78,7 +88,7 @@ func Query(q string, start time.Time, end time.Time, step int) ([]PromResult, er
 	}
 
 	if len(data.Data.Result) == 0 {
-		return nil, fmt.Errorf("No data")
+		return nil, fmt.Errorf("no data")
 	}
 
 	var results []PromResult
@@ -223,7 +233,13 @@ func registerExtension(router chi.Router, extension string, mime string) {
 		}
 		p.Legend.Top = true
 
-		sums := make([]float64, len(data[0].Values))
+		maxLen := 0
+		for _, item := range data {
+			if len(item.Values) > maxLen {
+				maxLen = len(item.Values)
+			}
+		}
+		sums := make([]float64, maxLen)
 
 		plotters := make([]plot.Plotter, len(data))
 		var nextColor int
@@ -236,8 +252,8 @@ func registerExtension(router chi.Router, extension string, mime string) {
 					value += sums[j]
 				}
 				points = append(points, plotter.XY{
-					float64(d.Time.Unix()),
-					value,
+					X: float64(d.Time.Unix()),
+					Y: value,
 				})
 				sums[j] += d.Value
 			}
